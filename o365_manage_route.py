@@ -59,7 +59,7 @@ def create_ip_routes(networks, version, prefix=""):
     return result
 
 def match_ipv4_route(route, skip_default_route = True):
-    match = re.findall(r"ip\ route\ ([0-9.]+)\ ([0-9.]+)\ ([0-9.]+)", route)
+    match = re.findall(r"ip\ route\ ([0-9.]+)\ ([0-9.]+)\ .*([0-9.]+)", route)
     if match:
         addr, mask, gw = match[0]
         prefix = ipaddress.IPv4Network(u"{}/{}".format(addr, mask))
