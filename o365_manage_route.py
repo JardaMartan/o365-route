@@ -100,8 +100,8 @@ def remove_routes(routes, version):
         cmd = create_ip_routes(routes, version, "no")
         
         return configure(cmd)
-            
-if __name__ == "__main__":
+        
+def test_parsing():
     nets = get_o365_networks()    
     cmd = create_ip_routes(nets, 4)
     rt = cmd.split("\n")
@@ -110,9 +110,19 @@ if __name__ == "__main__":
         netw = match_ipv4_route(r)
         if netw:
             test_nets.append(netw)
+            
+    compare_1 = list(set(nets) - set(test_nets))
+    compare_2 = list(set(test_nets) - set(nets))
+    
+    if compare_1 or compare_2:
+        print("Test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
 
     cfg_nets = get_configured_networks()
-
+    print("Configured networks: {}".format(cfg_nets))
+    
+    return nets, test_nets, cfg_nets
+            
+if __name__ == "__main__":
     missing, excessive = compare_routes()
     
     add_result = add_routes(missing, 4)
