@@ -41,14 +41,17 @@ def get_o365_networks(v4 = True, v6 = False):
     return nets
 
 def create_ip_routes(networks, version, prefix=""):
+    prefix = prefix.rstrip()
+    if prefix:
+        prefix += " "
     result = ""
     for net in networks:
         ip_net = ipaddress.ip_network(net)
         if ip_net.version == version:
             if ip_net.version == 4:
-                result += "ip route {} {} {}\n".format(ip_net.network_address, ip_net.netmask, default_gws[4])
+                result += "{}ip route {} {} {}\n".format(prefix, ip_net.network_address, ip_net.netmask, default_gws[4])
             elif ip_net.version == 6:
-                result += "ipv6 route {}/{} {}\n".format(ip_net.network_address, ip_net.prefixlen, default_gws[6])
+                result += "{}ipv6 route {}/{} {}\n".format(prefix, ip_net.network_address, ip_net.prefixlen, default_gws[6])
             else:
                 print("invalid IP version {}, network: {}".format(ip_net.version, net))
                 continue
