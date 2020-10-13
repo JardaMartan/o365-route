@@ -115,6 +115,6 @@ if __name__ == "__main__":
 
     missing, excessive = compare_routes()
     
-    add_routes(missing, 4)
+    add_result = add_routes(missing, 4)
     print()
-    remove_routes(excessive, 4)
+    remove_result = remove_routes(excessive, 4)
