@@ -27,7 +27,7 @@ def get_o365_networks(v4 = True, v6 = False):
 
     for e in o365_endpoints:
         if e["expressRoute"]:
-            print("{}: {} - {}".format(e["id"], e["category"], e["serviceAreaDisplayName"]))
+            # print("{}: {} - {}".format(e["id"], e["category"], e["serviceAreaDisplayName"]))
             if e.get("ips"):
                 result_ips = []
                 for net in e["ips"]:
@@ -91,26 +91,18 @@ def add_routes(routes, version):
     if response.lower() == "y":
         cmd = create_ip_routes(routes, version)
         
-        return cmd
+        return configure(cmd)
     
 def remove_routes(routes, version):
-    print("Routes to be added: \n{}\n\n".format(routes))
+    print("Routes to be removed: \n{}\n\n".format(routes))
     response = raw_input("Perform action? y/N ")
     if response.lower() == "y":
         cmd = create_ip_routes(routes, version, "no")
         
-        return cmd
+        return configure(cmd)
             
 if __name__ == "__main__":
-    nets = get_o365_networks()
-    
-    for ver in [4, 6]:
-        print("version {} routes:".format(ver))
-        
-        print(create_ip_routes(nets, ver))
-                    
-        print
-
+    nets = get_o365_networks()    
     cmd = create_ip_routes(nets, 4)
     rt = cmd.split("\n")
     test_nets = []
@@ -120,3 +112,9 @@ if __name__ == "__main__":
             test_nets.append(netw)
 
     cfg_nets = get_configured_networks()
+
+    missing, excessive = compare_routes()
+    
+    add_routes(missing, 4)
+    print()
+    remove_routes(excessive, 4)
