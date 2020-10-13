@@ -1,3 +1,25 @@
+""".
+Copyright (c) 2020 Cisco and/or its affiliates.
+
+This software is licensed to you under the terms of the Cisco Sample
+Code License, Version 1.1 (the "License"). You may obtain a copy of the
+License at
+
+               https://developer.cisco.com/docs/licenses
+               
+All use of the material herein must be in accordance with the terms of
+the License. All rights not expressly granted by the License are
+reserved. Unless required by applicable law or agreed to separately in
+writing, software distributed under the License is distributed on an "AS
+IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+or implied.
+"""
+__author__ = "Jaroslav Martan"
+__email__ = "jmartan@cisco.com"
+__version__ = "0.1.0"
+__copyright__ = "Copyright (c) 2020 Cisco and/or its affiliates."
+__license__ = "Cisco Sample Code License, Version 1.1"
+
 import uuid
 import requests as req
 import sys, os
@@ -6,11 +28,22 @@ import ipaddress
 from cli import cli,clip,configure,configurep, execute, executep
 
 default_gws = {
-4: "192.168.25.1",
-6: "FD0C:F674:19EF:D2::1"
+    4: "192.168.25.1",
+    6: "FD0C:F674:19EF:D2::1"
 }
 
 def get_o365_networks(v4 = True, v6 = False):
+    """Get list of Office365 networks from Microsoft
+    see: https://docs.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service
+    
+    Args:
+        v4 (bool): return IPv4 networks
+        v6 (bool): return IPv6 networks
+        
+    Returns:
+        List of network prefixes.
+    
+    """
     my_uuid = str(uuid.uuid4())
     o365_endpoint_url = "https://endpoints.office.com/endpoints/worldwide"
 
@@ -41,6 +74,17 @@ def get_o365_networks(v4 = True, v6 = False):
     return nets
 
 def create_ip_routes(networks, version, prefix=""):
+    """Create IOS CLI command(s) for static IP route setting
+    
+    Args:
+        networks[] (str): list of network prefixes
+        version (int): IP version (4/6)
+        prefix (str): prefix before the command(s) - typically "no"
+        
+    Returns:
+        Command string.
+    
+    """
     prefix = prefix.rstrip()
     if prefix:
         prefix += " "
@@ -58,6 +102,16 @@ def create_ip_routes(networks, version, prefix=""):
     return result
 
 def match_ipv4_route(route, skip_default_route = True):
+    """Parse "ip route" command from IOS configuration
+    
+    Args:
+        route (str): ip route command
+        skip_default_route (bool): skip 0/0 route to avoid accidental default route deletion
+        
+    Returns:
+        Network prefix string in "net/prefixlen" format.
+    
+    """
     match = re.findall(r"ip\ route\ ([0-9.]+)\ ([0-9.]+)\ .*([0-9.]+)", route)
     if match:
         addr, mask, gw = match[0]
@@ -66,6 +120,14 @@ def match_ipv4_route(route, skip_default_route = True):
             return u"{}/{}".format(prefix.network_address, prefix.prefixlen)
             
 def get_configured_networks():
+    """Get static routes from router configuration
+    
+    Args:
+        
+    Returns:
+        List of routes in "net/prefixlen" format.
+    
+    """
     exec_result = execute("sh run | section ip route")
     routes = exec_result.split("\n")
     
@@ -78,6 +140,14 @@ def get_configured_networks():
     return cfg_nets
     
 def compare_routes():
+    """Compare list of routes from O365 and router
+    
+    Args:
+            
+    Returns:
+        Networks that are missing in the router and that are excessive.
+    
+    """
     o365_routes = get_o365_networks()
     configured_routes = get_configured_networks()
     
@@ -86,6 +156,16 @@ def compare_routes():
     return missing_routes, excessive_routes
     
 def add_routes(routes, version):
+    """Add routes to the router configuration
+    
+    Args:
+        routes[] (str): list of routes to be added
+        version (int): IP version (4/6)
+        
+    Returns:
+        IOS CLI command string.
+    
+    """
     print("Routes to be added: \n{}\n\n".format(routes))
     response = raw_input("Perform action? y/N ")
     if response.lower() == "y":
@@ -94,6 +174,16 @@ def add_routes(routes, version):
         return configure(cmd)
     
 def remove_routes(routes, version):
+    """Remove routes from the router configuration
+    
+    Args:
+        routes[] (str): list of routes to be added
+        version (int): IP version (4/6)
+        
+    Returns:
+        IOS CLI command string.
+    
+    """
     print("Routes to be removed: \n{}\n\n".format(routes))
     response = raw_input("Perform action? y/N ")
     if response.lower() == "y":
@@ -102,6 +192,14 @@ def remove_routes(routes, version):
         return configure(cmd)
         
 def test_parsing():
+    """Test procedure to verify O365 source and parsing commands
+    
+    Args:
+        
+    Returns:
+        O365 networks, test networks (should be the same as O365), static networks from the router.
+    
+    """
     nets = get_o365_networks()    
     cmd = create_ip_routes(nets, 4)
     rt = cmd.split("\n")
