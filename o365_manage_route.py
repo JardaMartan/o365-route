@@ -54,10 +54,6 @@ def create_ip_routes(networks, version, prefix=""):
                 result += "{}ipv6 route {}/{} {}\n".format(prefix, ip_net.network_address, ip_net.prefixlen, default_gws[6])
             else:
                 print("invalid IP version {}, network: {}".format(ip_net.version, net))
-                continue
-            
-            if prefix:
-                result = prefix + " " + result
                 
     return result
 
