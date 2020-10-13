@@ -114,8 +114,10 @@ if __name__ == "__main__":
 
     cmd = create_ip_routes(nets, 4)
     rt = cmd.split("\n")
-    cfg_nets = []
+    test_nets = []
     for r in rt:
         netw = match_ipv4_route(r)
         if netw:
-            cfg_nets.append(netw)
+            test_nets.append(netw)
+
+    cfg_nets = get_configured_networks()
