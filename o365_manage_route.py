@@ -276,8 +276,18 @@ def test_parsing():
     return nets, test_nets, cfg_nets
             
 if __name__ == "__main__":
-    v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
-    
-    add_result = add_routes(v4missing, 4)
-    print()
-    remove_result = remove_routes(v4excessive, 4)
+    response = raw_input("Check IPv4 O365 routing configuration? y/N ")
+    if response.lower() == "y":
+        v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
+        
+        add_result = add_routes(v4missing, 4)
+        print()
+        remove_result = remove_routes(v4excessive, 4)
+
+    response = raw_input("Check IPv6 O365 routing configuration? y/N ")
+    if response.lower() == "y":
+        v6missing, v6excessive = compare_routes(v4 = False, v6 = True)
+        
+        add_result = add_routes(v6missing, 6)
+        print()
+        remove_result = remove_routes(v6excessive, 6)
