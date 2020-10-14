@@ -291,3 +291,7 @@ if __name__ == "__main__":
         add_result = add_routes(v6missing, 6)
         print()
         remove_result = remove_routes(v6excessive, 6)
+        
+    response = raw_input("Save configuration? y/N ")
+    if response.lower() == "y":
+        save_result = execute("copy run start")
