@@ -248,6 +248,8 @@ def test_parsing():
     
     if compare_1 or compare_2:
         print("IPv4 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
+    else:
+        print("IPv4 test OK, networks received, command parsing passed")
 
     v6nets = get_o365_networks(v4 = False, v6 = True)
     nets += v6nets   
@@ -265,6 +267,8 @@ def test_parsing():
     
     if compare_1 or compare_2:
         print("IPv6 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
+    else:
+        print("IPv6 test OK, networks received, command parsing passed")
 
     cfg_nets = get_configured_networks(v4 = True, v6 = True)
     print("Configured networks: {}".format(cfg_nets))
