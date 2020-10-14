@@ -231,32 +231,37 @@ def test_parsing():
         O365 networks, test networks (should be the same as O365), static networks from the router.
     
     """
-    nets = get_o365_networks(v4 = True, v6 = True)    
+    v4nets = get_o365_networks(v4 = True, v6 = False)
+    nets = v4nets
 
-    cmd = create_ip_routes(nets, 4)
+    cmd = create_ip_routes(v4nets, 4)
     rt = cmd.split("\n")
-    test_nets = []
+    v4test_nets = []
+    test_nets = v4test_nets
     for r in rt:
         netw = match_ipv4_route(r)
         if netw:
             test_nets.append(netw)
             
-    compare_1 = list(set(nets) - set(test_nets))
-    compare_2 = list(set(test_nets) - set(nets))
+    compare_1 = list(set(v4nets) - set(v4test_nets))
+    compare_2 = list(set(v4test_nets) - set(v4nets))
     
     if compare_1 or compare_2:
         print("IPv4 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
 
-    cmd = create_ip_routes(nets, 6)
+    v6nets = get_o365_networks(v4 = False, v6 = True)
+    nets += v6nets   
+    cmd = create_ip_routes(v6nets, 6)
     rt = cmd.split("\n")
-    test_nets = []
+    v6test_nets = []
+    test_nets += v6test_nets
     for r in rt:
         netw = match_ipv6_route(r)
         if netw:
             test_nets.append(netw)
             
-    compare_1 = list(set(nets) - set(test_nets))
-    compare_2 = list(set(test_nets) - set(nets))
+    compare_1 = list(set(v6nets) - set(v6test_nets))
+    compare_2 = list(set(v6test_nets) - set(v6nets))
     
     if compare_1 or compare_2:
         print("IPv6 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
