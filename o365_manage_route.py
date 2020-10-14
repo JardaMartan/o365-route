@@ -241,7 +241,7 @@ def test_parsing():
     for r in rt:
         netw = match_ipv4_route(r)
         if netw:
-            test_nets.append(netw)
+            v4test_nets.append(netw)
             
     compare_1 = list(set(v4nets) - set(v4test_nets))
     compare_2 = list(set(v4test_nets) - set(v4nets))
@@ -258,7 +258,7 @@ def test_parsing():
     for r in rt:
         netw = match_ipv6_route(r)
         if netw:
-            test_nets.append(netw)
+            v6test_nets.append(netw)
             
     compare_1 = list(set(v6nets) - set(v6test_nets))
     compare_2 = list(set(v6test_nets) - set(v6nets))
