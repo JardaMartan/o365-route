@@ -27,6 +27,7 @@ import re
 import ipaddress
 from cli import cli,clip,configure,configurep, execute, executep
 
+# next-hop (default) gateways, set your next-hops for static routes here
 default_gws = {
     4: "192.168.25.1",
     6: "FD0C:F674:19EF:D2::1"
@@ -119,7 +120,25 @@ def match_ipv4_route(route, skip_default_route = True):
         if  prefix.prefixlen > 0 or not skip_default_route:
             return u"{}/{}".format(prefix.network_address, prefix.prefixlen)
             
-def get_configured_networks():
+def match_ipv6_route(route, skip_default_route = True):
+    """Parse "ipv6 route" command from IOS configuration
+    
+    Args:
+        route (str): ip route command
+        skip_default_route (bool): skip 0::/0 route to avoid accidental default route deletion
+        
+    Returns:
+        Network prefix string in "net/prefixlen" format.
+    
+    """
+    match = re.findall(r"ipv6\ route\ ([0-9a-fA-F:]+)\/([0-9]+)\ .*([0-9a-fA-F:]+)", route)
+    if match:
+        addr, mask, gw = match[0]
+        prefix = ipaddress.IPv6Network(u"{}/{}".format(addr, mask))
+        if  prefix.prefixlen > 0 or not skip_default_route:
+            return u"{}/{}".format(prefix.network_address, prefix.prefixlen)
+                        
+def get_configured_networks(v4 = True, v6 = False):
     """Get static routes from router configuration
     
     Args:
@@ -128,18 +147,29 @@ def get_configured_networks():
         List of routes in "net/prefixlen" format.
     
     """
-    exec_result = execute("sh run | section ip route")
-    routes = exec_result.split("\n")
-    
     cfg_nets = []
-    for r in routes:
-        netw = match_ipv4_route(r)
-        if netw:
-            cfg_nets.append(netw)
     
+    if v4:
+        exec_result = execute("sh run | section ip route")
+        routes = exec_result.split("\n")
+        
+        for r in routes:
+            netw = match_ipv4_route(r)
+            if netw:
+                cfg_nets.append(netw)
+    
+    if v6:
+        exec_result = execute("sh run | section ipv6 route")
+        routes = exec_result.split("\n")
+        
+        for r in routes:
+            netw = match_ipv6_route(r)
+            if netw:
+                cfg_nets.append(netw)
+                
     return cfg_nets
     
-def compare_routes():
+def compare_routes(v4 = True, v6 = False):
     """Compare list of routes from O365 and router
     
     Args:
@@ -148,11 +178,12 @@ def compare_routes():
         Networks that are missing in the router and that are excessive.
     
     """
-    o365_routes = get_o365_networks()
-    configured_routes = get_configured_networks()
+    o365_routes = get_o365_networks(v4, v6)
+    configured_routes = get_configured_networks(v4, v6)
     
     missing_routes = list(set(o365_routes) - set(configured_routes))
     excessive_routes = list(set(configured_routes) - set(o365_routes))
+    
     return missing_routes, excessive_routes
     
 def add_routes(routes, version):
@@ -200,7 +231,8 @@ def test_parsing():
         O365 networks, test networks (should be the same as O365), static networks from the router.
     
     """
-    nets = get_o365_networks()    
+    nets = get_o365_networks(v4 = True, v6 = True)    
+
     cmd = create_ip_routes(nets, 4)
     rt = cmd.split("\n")
     test_nets = []
@@ -213,16 +245,30 @@ def test_parsing():
     compare_2 = list(set(test_nets) - set(nets))
     
     if compare_1 or compare_2:
-        print("Test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
+        print("IPv4 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
 
-    cfg_nets = get_configured_networks()
+    cmd = create_ip_routes(nets, 6)
+    rt = cmd.split("\n")
+    test_nets = []
+    for r in rt:
+        netw = match_ipv6_route(r)
+        if netw:
+            test_nets.append(netw)
+            
+    compare_1 = list(set(nets) - set(test_nets))
+    compare_2 = list(set(test_nets) - set(nets))
+    
+    if compare_1 or compare_2:
+        print("IPv6 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
+
+    cfg_nets = get_configured_networks(v4 = True, v6 = True)
     print("Configured networks: {}".format(cfg_nets))
     
     return nets, test_nets, cfg_nets
             
 if __name__ == "__main__":
-    missing, excessive = compare_routes()
+    v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
     
-    add_result = add_routes(missing, 4)
+    add_result = add_routes(v4missing, 4)
     print()
-    remove_result = remove_routes(excessive, 4)
+    remove_result = remove_routes(v4excessive, 4)
