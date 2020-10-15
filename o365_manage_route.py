@@ -210,7 +210,7 @@ def add_routes(routes, version, interactive = True):
     if interactive:
         log_message("{} IPv{} routes to be added: \n{}\n\n".format(len(routes), version, routes), interactive)
     else:
-        log_message("{} IPv{} routes to be added".format(len(route), version), interactive)
+        log_message("{} IPv{} routes to be added".format(len(routes), version), interactive)
                 
     response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
