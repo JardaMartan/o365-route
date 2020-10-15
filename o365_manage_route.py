@@ -317,59 +317,43 @@ if __name__ == "__main__":
         check_v4_routes = False
     if args.ipv6:
         check_v6_routes = True
-    if args.interactive:
-        if check_v4_routes:
-            response = raw_input("Check IPv4 O365 routing configuration? y/N ")
-            if response.lower() == "y":
-                v4missing, v4excessive = compare_routes(v4 = True, v6 = False, interactive = args.interactive)
-                
-                add_result = add_routes(v4missing, 4)
-                remove_result = remove_routes(v4excessive, 4)
 
-        if check_v6_routes:
-            response = raw_input("Check IPv6 O365 routing configuration? y/N ")
-            if response.lower() == "y":
-                v6missing, v6excessive = compare_routes(v4 = False, v6 = True, interactive = args.interactive)
-                
-                add_result = add_routes(v6missing, 6)
-                print()
-                remove_result = remove_routes(v6excessive, 6)
-            
-        response = raw_input("Save configuration? y/N ")
+    config_changed = False
+    if check_v4_routes:
+        response = raw_input("Check IPv4 O365 routing configuration? y/N ") if args.interactive else "y"
         if response.lower() == "y":
-            save_result = execute("copy run start")
-    else:
-        config_changed = False
-        if check_v4_routes:
-            v4missing, v4excessive = compare_routes(v4 = True, v6 = False, interactive = False)
-
+            v4missing, v4excessive = compare_routes(v4 = True, v6 = False, interactive = args.interactive)
+            
             if v4missing:
-                add_result = add_routes(v4missing, 4, interactive = False)
+                add_result = add_routes(v4missing, 4, interactive = args.interactive)
                 config_changed = True
             else:
-                ios_log("No IPv4 routes to be added")
-                
+                log_message("No IPv4 routes to be added", interactive = args.interactive)
+
             if v4excessive:
-                remove_result = remove_routes(v4excessive, 4, interactive = False)
+                remove_result = remove_routes(v4excessive, 4, interactive = args.interactive)
                 config_changed = True
             else:
-                ios_log("No IPv4 routes to be removed")
+                log_message("No IPv4 routes to be removed", interactive = args.interactive)
 
-        if check_v6_routes:
-            v6missing, v6excessive = compare_routes(v4 = False, v6 = True, interactive = False)
-
+    if check_v6_routes:
+        response = raw_input("Check IPv6 O365 routing configuration? y/N ") if args.interactive else "y"
+        if response.lower() == "y":
+            v6missing, v6excessive = compare_routes(v4 = False, v6 = True, interactive = args.interactive)
+            
             if v6missing:
-                add_result = add_routes(v6missing, 6, interactive = False)
+                add_result = add_routes(v6missing, 6, interactive = args.interactive)
                 config_changed = True
             else:
-                ios_log("No IPv6 routes to be added")
-                
+                log_message("No IPv6 routes to be added", interactive = args.interactive)
+
             if v6excessive:
-                remove_result = remove_routes(v6excessive, 6, interactive = False)
+                remove_result = remove_routes(v6excessive, 6, interactive = args.interactive)
                 config_changed = True
             else:
-                ios_log("No IPv6 routes to be removed")
-                
-        if config_changed:
-            ios_log("Saving configuration...")
+                log_message("No IPv6 routes to be removed", interactive = args.interactive)
+
+    if config_changed:
+        response = raw_input("Save configuration? y/N ") if args.interactive else "y"
+        if response.lower() == "y":
             save_result = execute("copy run start")
