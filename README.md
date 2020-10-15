@@ -24,7 +24,7 @@ VirtualPortGroup0 can have `ip nat inside` with proper additional configuration 
 ### Installation
 
 1. start guest shell `guestshell run bash`
-2. install git `yum install`
+2. install git `yum install git`
 3. install script `git clone https://github.com/JardaMartan/o365-route.git`
 4. `cd o365-route`
 5. install Python virtual environment `python -m virtualenv venv`
