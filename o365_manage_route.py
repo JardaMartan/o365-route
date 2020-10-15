@@ -208,9 +208,9 @@ def add_routes(routes, version, interactive = True):
     
     """
     if interactive or routes:
-        log_message("{} routes to be added: \n{}\n\n".format(len(routes), routes), interactive)
+        log_message("{} IPv{} routes to be added: \n{}\n\n".format(len(routes), version, routes), interactive)
     elif not routes:
-        log_message("No routes to be added", interactive)
+        log_message("No IPv{} routes to be added".format(version), interactive)
         return ""
                 
     response = raw_input("Perform action? y/N ") if interactive else "y"
@@ -231,9 +231,9 @@ def remove_routes(routes, version, interactive = True):
     
     """
     if interactive or routes:
-        log_message("{} routes to be removed: \n{}\n\n".format(len(routes), routes), interactive)
+        log_message("{} IPv{} routes to be removed: \n{}\n\n".format(len(routes), version, routes), interactive)
     elif not routes:
-        log_message("No routes to be removed", interactive)
+        log_message("No IPv{} routes to be removed".format(version), interactive)
         return ""
 
     response = raw_input("Perform action? y/N ") if interactive else "y"
