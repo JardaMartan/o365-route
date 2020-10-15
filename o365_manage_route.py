@@ -207,7 +207,10 @@ def add_routes(routes, version, interactive = True):
     """
     if interactive or routes:
         log_message("Routes to be added: \n{}\n\n".format(routes), interactive)
-        
+    elif not routes:
+        log_message("No routes to be added", interactive)
+        return ""
+                
     response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
         cmd = create_ip_routes(routes, version)
@@ -227,6 +230,10 @@ def remove_routes(routes, version, interactive = True):
     """
     if interactive or routes:
         log_message("Routes to be removed: \n{}\n\n".format(routes), interactive)
+    elif not routes:
+        log_message("No routes to be removed", interactive)
+        return ""
+
     response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
         cmd = create_ip_routes(routes, version, "no")
