@@ -207,11 +207,10 @@ def add_routes(routes, version, interactive = True):
         IOS CLI command string.
     
     """
-    if interactive or routes:
+    if interactive:
         log_message("{} IPv{} routes to be added: \n{}\n\n".format(len(routes), version, routes), interactive)
-    elif not routes:
-        log_message("No IPv{} routes to be added".format(version), interactive)
-        return ""
+    else:
+        log_message("{} IPv{} routes to be added".format(len(route), version), interactive)
                 
     response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
@@ -230,11 +229,10 @@ def remove_routes(routes, version, interactive = True):
         IOS CLI command string.
     
     """
-    if interactive or routes:
+    if interactive:
         log_message("{} IPv{} routes to be removed: \n{}\n\n".format(len(routes), version, routes), interactive)
-    elif not routes:
-        log_message("No IPv{} routes to be removed".format(version), interactive)
-        return ""
+    else:
+        log_message("{} IPv{} routes to be removed".format(len(routes), version), interactive)
 
     response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
