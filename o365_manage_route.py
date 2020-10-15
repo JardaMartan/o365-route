@@ -26,14 +26,21 @@ import sys, os
 import re
 import ipaddress
 from cli import cli,clip,configure,configurep, execute, executep
+import config as cfg
 
 # next-hop (default) gateways, set your next-hops for static routes here
-default_gws = {
-    4: "192.168.25.1",
-    6: "FD0C:F674:19EF:D2::1"
-}
+if hasattr(cfg, "default_gws"):
+    default_gws = cfg.default_gws
+else:
+    default_gws = {
+        4: "192.168.25.1",
+        6: "FD0C:F674:19EF:D2::1"
+    }
+    
+check_v4_routes = cfg.check_v4_routes if hasattr(cfg, "check_v4_routes") else True
+check_v6_routes = cfg.check_v6_routes if hasattr(cfg, "check_v6_routes") else False
 
-def get_o365_networks(v4 = True, v6 = False):
+def get_o365_networks(v4 = True, v6 = False, interactive = True):
     """Get list of Office365 networks from Microsoft
     see: https://docs.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service
     
@@ -52,7 +59,7 @@ def get_o365_networks(v4 = True, v6 = False):
 
     res = req.get(rurl)
     if res.status_code != 200:
-        print("O365 endpoints request failed with {} - {}".format(res.status_code, res.text))
+        log_message("O365 endpoints request failed with {} - {}".format(res.status_code, res.text), interactive)
         sys.exit()
         
     o365_endpoints = res.json()
@@ -74,7 +81,7 @@ def get_o365_networks(v4 = True, v6 = False):
     
     return nets
 
-def create_ip_routes(networks, version, prefix=""):
+def create_ip_routes(networks, version, prefix="", interactive = True):
     """Create IOS CLI command(s) for static IP route setting
     
     Args:
@@ -98,7 +105,7 @@ def create_ip_routes(networks, version, prefix=""):
             elif ip_net.version == 6:
                 result += "{}ipv6 route {}/{} {}\n".format(prefix, ip_net.network_address, ip_net.prefixlen, default_gws[6])
             else:
-                print("invalid IP version {}, network: {}".format(ip_net.version, net))
+                log_message("invalid IP version {}, network: {}".format(ip_net.version, net), interactive)
                 
     return result
 
@@ -186,25 +193,28 @@ def compare_routes(v4 = True, v6 = False):
     
     return missing_routes, excessive_routes
     
-def add_routes(routes, version):
+def add_routes(routes, version, interactive = True):
     """Add routes to the router configuration
     
     Args:
         routes[] (str): list of routes to be added
         version (int): IP version (4/6)
+        interactive: run in interactive mode (ask user to confirm)
         
     Returns:
         IOS CLI command string.
     
     """
-    print("Routes to be added: \n{}\n\n".format(routes))
-    response = raw_input("Perform action? y/N ")
+    if interactive or routes:
+        log_message("Routes to be added: \n{}\n\n".format(routes), interactive)
+        
+    response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
         cmd = create_ip_routes(routes, version)
         
         return configure(cmd)
     
-def remove_routes(routes, version):
+def remove_routes(routes, version, interactive = True):
     """Remove routes from the router configuration
     
     Args:
@@ -215,12 +225,22 @@ def remove_routes(routes, version):
         IOS CLI command string.
     
     """
-    print("Routes to be removed: \n{}\n\n".format(routes))
-    response = raw_input("Perform action? y/N ")
+    if interactive or routes:
+        log_message("Routes to be removed: \n{}\n\n".format(routes), interactive)
+    response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
         cmd = create_ip_routes(routes, version, "no")
         
         return configure(cmd)
+        
+def log_message(message, interactive = True):
+    if interactive:
+        log_message(message)
+    else:
+        ios_log(message)
+        
+def ios_log(message, severity=5):
+    cli("send log {} {}".format(severity, message))
         
 def test_parsing():
     """Test procedure to verify O365 source and parsing commands
@@ -247,9 +267,9 @@ def test_parsing():
     compare_2 = list(set(v4test_nets) - set(v4nets))
     
     if compare_1 or compare_2:
-        print("IPv4 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
+        log_message("IPv4 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
     else:
-        print("IPv4 test OK, networks received, command parsing passed")
+        log_message("IPv4 test OK, networks received, command parsing passed")
 
     v6nets = get_o365_networks(v4 = False, v6 = True)
     nets += v6nets   
@@ -266,32 +286,75 @@ def test_parsing():
     compare_2 = list(set(v6test_nets) - set(v6nets))
     
     if compare_1 or compare_2:
-        print("IPv6 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
+        log_message("IPv6 test failed, non-empty results\n1: {},\n 2: {}".format(compare_1, compare_2))
     else:
-        print("IPv6 test OK, networks received, command parsing passed")
+        log_message("IPv6 test OK, networks received, command parsing passed")
 
     cfg_nets = get_configured_networks(v4 = True, v6 = True)
-    print("Configured networks: {}".format(cfg_nets))
+    log_message("Configured networks: {}".format(cfg_nets))
     
     return nets, test_nets, cfg_nets
             
 if __name__ == "__main__":
-    response = raw_input("Check IPv4 O365 routing configuration? y/N ")
-    if response.lower() == "y":
-        v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
-        
-        add_result = add_routes(v4missing, 4)
-        print()
-        remove_result = remove_routes(v4excessive, 4)
+    import argparse
 
-    response = raw_input("Check IPv6 O365 routing configuration? y/N ")
-    if response.lower() == "y":
-        v6missing, v6excessive = compare_routes(v4 = False, v6 = True)
-        
-        add_result = add_routes(v6missing, 6)
-        print()
-        remove_result = remove_routes(v6excessive, 6)
-        
-    response = raw_input("Save configuration? y/N ")
-    if response.lower() == "y":
-        save_result = execute("copy run start")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--interactive", action="store_true", help="Run in interactive mode")
+
+    args = parser.parse_args()
+    if args.interactive:
+        if check_v4_routes:
+            response = raw_input("Check IPv4 O365 routing configuration? y/N ")
+            if response.lower() == "y":
+                v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
+                
+                add_result = add_routes(v4missing, 4)
+                remove_result = remove_routes(v4excessive, 4)
+
+        if check_v6_routes:
+            response = raw_input("Check IPv6 O365 routing configuration? y/N ")
+            if response.lower() == "y":
+                v6missing, v6excessive = compare_routes(v4 = False, v6 = True)
+                
+                add_result = add_routes(v6missing, 6)
+                print()
+                remove_result = remove_routes(v6excessive, 6)
+            
+        response = raw_input("Save configuration? y/N ")
+        if response.lower() == "y":
+            save_result = execute("copy run start")
+    else:
+        config_changed = False
+        if check_v4_routes:
+            v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
+
+            if v4missing:
+                add_result = add_routes(v4missing, 4, interactive = False)
+                config_changed = True
+            else:
+                ios_log("No IPv4 routes to be added")
+                
+            if v4excessive:
+                remove_result = remove_routes(v4excessive, 4, interactive = False)
+                config_changed = True
+            else:
+                ios_log("No IPv4 routes to be removed")
+
+        if check_v6_routes:
+            v6missing, v6excessive = compare_routes(v4 = False, v6 = True)
+
+            if v6missing:
+                add_result = add_routes(v6missing, 6, interactive = False)
+                config_changed = True
+            else:
+                ios_log("No IPv6 routes to be added")
+                
+            if v6excessive:
+                remove_result = remove_routes(v6excessive, 6, interactive = False)
+                config_changed = True
+            else:
+                ios_log("No IPv6 routes to be removed")
+                
+        if config_changed:
+            ios_log("Saving configuration...")
+            save_result = execute("copy run start")
