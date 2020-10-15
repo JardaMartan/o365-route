@@ -307,8 +307,14 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--interactive", action="store_true", help="Run in interactive mode")
+    parser.add_argument("-4", "--ipv4", action="store_true", help="Check IPv4 routing information (default yes)")
+    parser.add_argument("-6", "--ipv6", action="store_true", help="Check IPv6 routing information (default no)")
 
     args = parser.parse_args()
+    if not args.ipv4:
+        check_v4_routes = False
+    if args.ipv6:
+        check_v6_routes = True
     if args.interactive:
         if check_v4_routes:
             response = raw_input("Check IPv4 O365 routing configuration? y/N ")
