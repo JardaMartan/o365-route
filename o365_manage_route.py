@@ -62,7 +62,7 @@ def get_o365_networks(v4 = True, v6 = False, interactive = True):
         log_message("O365 endpoints request failed with {} - {}".format(res.status_code, res.text), interactive)
         sys.exit()
     else:
-        log_message("O365 endpoints fetch status code: {}".format(res.status_code))
+        log_message("O365 endpoints fetch status code: {}".format(res.status_code), interactive)
         
     o365_endpoints = res.json()
 
