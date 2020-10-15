@@ -36,7 +36,7 @@ VirtualPortGroup0 can have `ip nat inside` with proper additional configuration 
 
 ### Automated run using EEM
 
-EEM configuration
+EEM configuration to run every minute
 ```
 event manager applet o365route
  event timer cron cron-entry "* * * * *"
