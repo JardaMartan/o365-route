@@ -147,7 +147,7 @@ def match_ipv6_route(route, skip_default_route = True):
         if  prefix.prefixlen > 0 or not skip_default_route:
             return u"{}/{}".format(prefix.network_address, prefix.prefixlen)
                         
-def get_configured_networks(v4 = True, v6 = False):
+def get_configured_networks(v4 = True, v6 = False, interactive = True):
     """Get static routes from router configuration
     
     Args:
@@ -178,7 +178,7 @@ def get_configured_networks(v4 = True, v6 = False):
                 
     return cfg_nets
     
-def compare_routes(v4 = True, v6 = False):
+def compare_routes(v4 = True, v6 = False, interactive = True):
     """Compare list of routes from O365 and router
     
     Args:
@@ -187,8 +187,8 @@ def compare_routes(v4 = True, v6 = False):
         Networks that are missing in the router and that are excessive.
     
     """
-    o365_routes = get_o365_networks(v4, v6)
-    configured_routes = get_configured_networks(v4, v6)
+    o365_routes = get_o365_networks(v4, v6, interactive)
+    configured_routes = get_configured_networks(v4, v6, interactive)
     
     missing_routes = list(set(o365_routes) - set(configured_routes))
     excessive_routes = list(set(configured_routes) - set(o365_routes))
@@ -321,7 +321,7 @@ if __name__ == "__main__":
         if check_v4_routes:
             response = raw_input("Check IPv4 O365 routing configuration? y/N ")
             if response.lower() == "y":
-                v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
+                v4missing, v4excessive = compare_routes(v4 = True, v6 = False, interactive = args.interactive)
                 
                 add_result = add_routes(v4missing, 4)
                 remove_result = remove_routes(v4excessive, 4)
@@ -329,7 +329,7 @@ if __name__ == "__main__":
         if check_v6_routes:
             response = raw_input("Check IPv6 O365 routing configuration? y/N ")
             if response.lower() == "y":
-                v6missing, v6excessive = compare_routes(v4 = False, v6 = True)
+                v6missing, v6excessive = compare_routes(v4 = False, v6 = True, interactive = args.interactive)
                 
                 add_result = add_routes(v6missing, 6)
                 print()
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     else:
         config_changed = False
         if check_v4_routes:
-            v4missing, v4excessive = compare_routes(v4 = True, v6 = False)
+            v4missing, v4excessive = compare_routes(v4 = True, v6 = False, interactive = False)
 
             if v4missing:
                 add_result = add_routes(v4missing, 4, interactive = False)
@@ -356,7 +356,7 @@ if __name__ == "__main__":
                 ios_log("No IPv4 routes to be removed")
 
         if check_v6_routes:
-            v6missing, v6excessive = compare_routes(v4 = False, v6 = True)
+            v6missing, v6excessive = compare_routes(v4 = False, v6 = True, interactive = False)
 
             if v6missing:
                 add_result = add_routes(v6missing, 6, interactive = False)
