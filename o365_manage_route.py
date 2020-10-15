@@ -355,5 +355,6 @@ if __name__ == "__main__":
 
     if config_changed:
         response = raw_input("Save configuration? y/N ") if args.interactive else "y"
+        log_message("Saving configuration...", interactive = args.interactive)
         if response.lower() == "y":
             save_result = execute("copy run start")
