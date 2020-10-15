@@ -1,5 +1,5 @@
 ## Synchronize O365 routes to an IOS-XE router using Guest Shell
-This Guest Shell script uses Microsoft O365 [Webservice](https://docs.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service) to get routing information of Office365 cloud. It can be used to automatically create static routes for a dedicated Internet link. So Office365 traffic will use the link and all the remaining traffic will be routed using a default route via a different link. It can be used as an alternative to [ExpressRoute](https://docs.microsoft.com/en-us/microsoft-365/enterprise/azure-expressroute)
+This Guest Shell script uses Microsoft O365 [Webservice](https://docs.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service) to get routing information of Office365 cloud. It can be used to automatically create static routes for a dedicated Internet link. So Office365 traffic will use the link and all the remaining traffic will be routed using a default route via a different link. It can be used as an alternative to [ExpressRoute](https://docs.microsoft.com/en-us/microsoft-365/enterprise/azure-expressroute). The generated static routes can be also used to bypass a firewall or proxy for Office365 traffic.
 
 ### Guest Shell configuration
 
