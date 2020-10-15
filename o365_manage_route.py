@@ -248,7 +248,7 @@ def log_message(message, interactive = True):
         
 def ios_log(message, severity=5):
     # !!! do not send large messages to the log !!!
-    message = (message[:120] + '...') if len(message) > 120 else data
+    message = (message[:120] + '...') if len(message) > 120 else messages
     cli("send log {} {}".format(severity, message))
         
 def test_parsing():
