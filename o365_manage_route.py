@@ -242,7 +242,7 @@ def remove_routes(routes, version, interactive = True):
         
 def log_message(message, interactive = True):
     if interactive:
-        log_message(message)
+        print(message)
     else:
         ios_log(message)
         
