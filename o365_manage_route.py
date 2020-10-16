@@ -286,7 +286,7 @@ def test_parsing():
     else:
         log_message("IPv4 test OK, networks received, command parsing passed")
 
-    v6nets = o365_networks["ipv4"]
+    v6nets = o365_networks["ipv6"]
     cmd = create_ip_routes(v6nets, 6)
     rt = cmd.split("\n")
     v6test_nets = []
@@ -310,6 +310,16 @@ def test_parsing():
     test_nets = {"ipv4": v4test_nets, "ipv6": v6test_nets}
     
     return o365_networks, test_nets, cfg_nets
+    
+"""
+To run tests or delete existing routes, do:
+
+o365_networks, test_nets, cfg_nets = test_parsing()
+
+remove_routes(o365_networks["ipv4"], 4)
+
+remove_routes(o365_networks["ipv6"], 6)
+"""
             
 if __name__ == "__main__":
     import argparse
