@@ -352,8 +352,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--interactive", action="store_true", help="Run in interactive mode")
-    parser.add_argument("-4", "--ipv4", action="store_true", help="Check IPv4 routing information (default yes)")
-    parser.add_argument("-6", "--ipv6", action="store_true", help="Check IPv6 routing information (default no)")
+    parser.add_argument("-4", "--ipv4", action="store_true", help="Check IPv4 routing information (default yes)", default = check_v4_routes)
+    parser.add_argument("-6", "--ipv6", action="store_true", help="Check IPv6 routing information (default no)", default = check_v6_routes)
     parser.add_argument("-v", "--vrf", type = str, help="VRF name")
 
     args = parser.parse_args()
