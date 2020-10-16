@@ -32,7 +32,8 @@ VirtualPortGroup0 can have `ip nat inside` with proper additional configuration 
 6. create Python virtual environment `virtualenv venv --system-site-packages`
 7. switch to Python virtual environment `source venv/bin/activate`
 8. install required packages `pip install -r requirements.txt`
-9. run script in interactive mode `python o365_manage_route.py -i46`
+9. edit the **config.py** file, set at least **default_gws** to match your next hop IPs. These next hops will be used in static routes.
+10. run script in interactive mode `python o365_manage_route.py -i46`
 
 ### Automated run using EEM
 

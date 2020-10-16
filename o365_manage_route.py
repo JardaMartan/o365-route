@@ -33,8 +33,8 @@ if hasattr(cfg, "default_gws"):
     default_gws = cfg.default_gws
 else:
     default_gws = {
-        4: "192.168.25.1",
-        6: "FD0C:F674:19EF:D2::1"
+        "ipv4": "192.168.25.1",
+        "ipv6": "FD0C:F674:19EF:D2::1"
     }
     
 check_v4_routes = cfg.check_v4_routes if hasattr(cfg, "check_v4_routes") else True
@@ -113,9 +113,9 @@ def create_ip_routes(networks, version, vrf = None, prefix="", interactive = Tru
         ip_net = ipaddress.ip_network(net)
         if ip_net.version == version:
             if ip_net.version == 4:
-                result += "{}ip route {}{} {} {}\n".format(prefix, vrf_insert, ip_net.network_address, ip_net.netmask, default_gws[4])
+                result += "{}ip route {}{} {} {}\n".format(prefix, vrf_insert, ip_net.network_address, ip_net.netmask, default_gws["ipv4"])
             elif ip_net.version == 6:
-                result += "{}ipv6 route {}{}/{} {}\n".format(prefix, vrf_insert, ip_net.network_address, ip_net.prefixlen, default_gws[6])
+                result += "{}ipv6 route {}{}/{} {}\n".format(prefix, vrf_insert, ip_net.network_address, ip_net.prefixlen, default_gws["ipv6"])
             else:
                 log_message("invalid IP version {}, network: {}".format(ip_net.version, net), interactive)
                 
