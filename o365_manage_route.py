@@ -107,7 +107,7 @@ def create_ip_routes(networks, version, vrf = None, prefix="", interactive = Tru
     if prefix:
         prefix += " "
         
-    vrf_insert = "vrf {} " if vrf else ""
+    vrf_insert = "vrf {} ".format(vrf) if vrf else ""
     result = ""
     for net in networks:
         ip_net = ipaddress.ip_network(net)
@@ -133,7 +133,7 @@ def match_ipv4_route(route, vrf = None, skip_default_route = True):
         Network prefix string in "net/prefixlen" format.
     
     """
-    vrf_insert = "vrf\\ {}\\ " if vrf else ""
+    vrf_insert = "vrf\\ {}\\ ".format(vrf) if vrf else ""
     match = re.findall(r"ip\ route\ {}([0-9.]+)\ ([0-9.]+)\ .*([0-9.]+)".format(vrf_insert), route)
     if match:
         addr, mask, gw = match[0]
@@ -153,7 +153,7 @@ def match_ipv6_route(route, vrf = None, skip_default_route = True):
         Network prefix string in "net/prefixlen" format.
     
     """
-    vrf_insert = "vrf\\ {}\\ " if vrf else ""
+    vrf_insert = "vrf\\ {}\\ ".format(vrf) if vrf else ""
     match = re.findall(r"ipv6\ route\ {}([0-9a-fA-F:]+)\/([0-9]+)\ .*([0-9a-fA-F:]+)".format(vrf_insert), route)
     if match:
         addr, mask, gw = match[0]
@@ -174,7 +174,7 @@ Returns:
     """
     v4cfg_nets = []
     v6cfg_nets = []
-    vrf_insert = "vrf {}" if vrf else ""
+    vrf_insert = "vrf {}".format(vrf) if vrf else ""
     
     exec_result = execute("sh run | section ip route {}".format(vrf_insert))
     routes = exec_result.split("\n")
