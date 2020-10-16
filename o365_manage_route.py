@@ -277,7 +277,7 @@ def test_parsing(vrf = None):
     
     """
     o365_networks = get_o365_networks()
-    configured_networks = get_configured_networks()
+    configured_networks = get_configured_networks(vrf = vrf)
 
     v4nets = o365_networks["ipv4"]
     nets = v4nets
@@ -317,7 +317,7 @@ def test_parsing(vrf = None):
     else:
         log_message("IPv6 test OK, networks received, command parsing passed")
 
-    cfg_nets = get_configured_networks()
+    cfg_nets = get_configured_networks(vrf = vrf)
     log_message("Configured networks: {}".format(cfg_nets))
     
     test_nets = {"ipv4": v4test_nets, "ipv6": v6test_nets}
@@ -345,6 +345,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--interactive", action="store_true", help="Run in interactive mode")
     parser.add_argument("-4", "--ipv4", action="store_true", help="Check IPv4 routing information (default yes)")
     parser.add_argument("-6", "--ipv6", action="store_true", help="Check IPv6 routing information (default no)")
+    parser.add_argument("-v", "--vrf", type = str, help="VRF name")
 
     args = parser.parse_args()
     if not args.ipv4:
@@ -353,7 +354,7 @@ if __name__ == "__main__":
         check_v6_routes = True
         
     o365_networks = get_o365_networks(args.interactive)
-    configured_networks = get_configured_networks(args.interactive)
+    configured_networks = get_configured_networks(vrf = args.vrf, interactive = args.interactive)
 
     config_changed = False
     if check_v4_routes:
@@ -362,16 +363,16 @@ if __name__ == "__main__":
             v4missing, v4excessive = compare_routes(o365_networks["ipv4"], configured_networks["ipv4"], interactive = args.interactive)
             
             if v4missing:
-                add_result = add_routes(v4missing, 4, interactive = args.interactive)
+                add_result = add_routes(v4missing, 4, vrf = args.vrf, interactive = args.interactive)
                 config_changed = True
             else:
-                log_message("No IPv4 routes to be added", interactive = args.interactive)
+                log_message("No IPv4 routes to be added to VRF \"{}\"".format(args.vrf), interactive = args.interactive)
 
             if v4excessive:
-                remove_result = remove_routes(v4excessive, 4, interactive = args.interactive)
+                remove_result = remove_routes(v4excessive, 4, vrf = args.vrf, interactive = args.interactive)
                 config_changed = True
             else:
-                log_message("No IPv4 routes to be removed", interactive = args.interactive)
+                log_message("No IPv4 routes to be removed from VRF \"{}\"".format(args.vrf), interactive = args.interactive)
 
     if check_v6_routes:
         response = raw_input("Check IPv6 O365 routing configuration? y/N ") if args.interactive else "y"
@@ -379,16 +380,16 @@ if __name__ == "__main__":
             v6missing, v6excessive = compare_routes(o365_networks["ipv6"], configured_networks["ipv6"], interactive = args.interactive)
             
             if v6missing:
-                add_result = add_routes(v6missing, 6, interactive = args.interactive)
+                add_result = add_routes(v6missing, 6, vrf = args.vrf, interactive = args.interactive)
                 config_changed = True
             else:
-                log_message("No IPv6 routes to be added", interactive = args.interactive)
+                log_message("No IPv6 routes to be added to VRF \"{}\"".format(args.vrf), interactive = args.interactive)
 
             if v6excessive:
-                remove_result = remove_routes(v6excessive, 6, interactive = args.interactive)
+                remove_result = remove_routes(v6excessive, 6, vrf = args.vrf, interactive = args.interactive)
                 config_changed = True
             else:
-                log_message("No IPv6 routes to be removed", interactive = args.interactive)
+                log_message("No IPv6 routes to be removed from VRF \"{}\"".format(args.vrf), interactive = args.interactive)
 
     if config_changed:
         response = raw_input("Save configuration? y/N ") if args.interactive else "y"
