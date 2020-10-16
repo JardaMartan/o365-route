@@ -89,13 +89,15 @@ def get_o365_networks(interactive = True):
     
     return {"ipv4": v4nets, "ipv6": v6nets}
 
-def create_ip_routes(networks, version, prefix="", interactive = True):
+def create_ip_routes(networks, version, vrf = None, prefix="", interactive = True):
     """Create IOS CLI command(s) for static IP route setting
     
     Args:
         networks[] (str): list of network prefixes
         version (int): IP version (4/6)
+        vrf (str): VRF name
         prefix (str): prefix before the command(s) - typically "no"
+        interactive (bool): interactive mode (or automated), used for logging method
         
     Returns:
         Command string.
@@ -104,59 +106,66 @@ def create_ip_routes(networks, version, prefix="", interactive = True):
     prefix = prefix.rstrip()
     if prefix:
         prefix += " "
+        
+    vrf_insert = "vrf {} " if vrf else ""
     result = ""
     for net in networks:
         ip_net = ipaddress.ip_network(net)
         if ip_net.version == version:
             if ip_net.version == 4:
-                result += "{}ip route {} {} {}\n".format(prefix, ip_net.network_address, ip_net.netmask, default_gws[4])
+                result += "{}ip route {}{} {} {}\n".format(prefix, vrf_insert, ip_net.network_address, ip_net.netmask, default_gws[4])
             elif ip_net.version == 6:
-                result += "{}ipv6 route {}/{} {}\n".format(prefix, ip_net.network_address, ip_net.prefixlen, default_gws[6])
+                result += "{}ipv6 route {}{}/{} {}\n".format(prefix, vrf_insert, ip_net.network_address, ip_net.prefixlen, default_gws[6])
             else:
                 log_message("invalid IP version {}, network: {}".format(ip_net.version, net), interactive)
                 
     return result
 
-def match_ipv4_route(route, skip_default_route = True):
+def match_ipv4_route(route, vrf = None, skip_default_route = True):
     """Parse "ip route" command from IOS configuration
     
     Args:
         route (str): ip route command
+        vrf (str): VRF name
         skip_default_route (bool): skip 0/0 route to avoid accidental default route deletion
         
     Returns:
         Network prefix string in "net/prefixlen" format.
     
     """
-    match = re.findall(r"ip\ route\ ([0-9.]+)\ ([0-9.]+)\ .*([0-9.]+)", route)
+    vrf_insert = "vrf\\ {}\\ " if vrf else ""
+    match = re.findall(r"ip\ route\ {}([0-9.]+)\ ([0-9.]+)\ .*([0-9.]+)".format(vrf_insert), route)
     if match:
         addr, mask, gw = match[0]
         prefix = ipaddress.IPv4Network(u"{}/{}".format(addr, mask))
         if  prefix.prefixlen > 0 or not skip_default_route:
             return u"{}/{}".format(prefix.network_address, prefix.prefixlen)
             
-def match_ipv6_route(route, skip_default_route = True):
+def match_ipv6_route(route, vrf = None, skip_default_route = True):
     """Parse "ipv6 route" command from IOS configuration
     
     Args:
         route (str): ip route command
+        vrf (str): VRF name
         skip_default_route (bool): skip 0::/0 route to avoid accidental default route deletion
         
     Returns:
         Network prefix string in "net/prefixlen" format.
     
     """
-    match = re.findall(r"ipv6\ route\ ([0-9a-fA-F:]+)\/([0-9]+)\ .*([0-9a-fA-F:]+)", route)
+    vrf_insert = "vrf\\ {}\\ " if vrf else ""
+    match = re.findall(r"ipv6\ route\ {}([0-9a-fA-F:]+)\/([0-9]+)\ .*([0-9a-fA-F:]+)".format(vrf_insert), route)
     if match:
         addr, mask, gw = match[0]
         prefix = ipaddress.IPv6Network(u"{}/{}".format(addr, mask))
         if  prefix.prefixlen > 0 or not skip_default_route:
             return u"{}/{}".format(prefix.network_address, prefix.prefixlen)
                         
-def get_configured_networks(interactive = True):
+def get_configured_networks(vrf = None, interactive = True):
     """Get static routes from router configuration
     
 Args:
+    vrf (str): VRF name
     interactive (bool): interactive mode (or automated), used for logging method
     
 Returns:
@@ -165,20 +174,21 @@ Returns:
     """
     v4cfg_nets = []
     v6cfg_nets = []
+    vrf_insert = "vrf {}" if vrf else ""
     
-    exec_result = execute("sh run | section ip route")
+    exec_result = execute("sh run | section ip route {}".format(vrf_insert))
     routes = exec_result.split("\n")
     
     for r in routes:
-        netw = match_ipv4_route(r)
+        netw = match_ipv4_route(r, vrf = vrf)
         if netw:
             v4cfg_nets.append(netw)
     
-    exec_result = execute("sh run | section ipv6 route")
+    exec_result = execute("sh run | section ipv6 route {}".format(vrf_insert))
     routes = exec_result.split("\n")
     
     for r in routes:
-        netw = match_ipv6_route(r)
+        netw = match_ipv6_route(r, vrf = vrf)
         if netw:
             v6cfg_nets.append(netw)
                 
@@ -198,48 +208,51 @@ def compare_routes(o365_routes, configured_routes, interactive = True):
     
     return missing_routes, excessive_routes
     
-def add_routes(routes, version, interactive = True):
+def add_routes(routes, version, vrf = None, interactive = True):
     """Add routes to the router configuration
     
     Args:
         routes[] (str): list of routes to be added
         version (int): IP version (4/6)
-        interactive: run in interactive mode (ask user to confirm)
+        vrf (str): VRF name
+        interactive (bool): run in interactive mode (ask user to confirm)
         
     Returns:
         IOS CLI command string.
     
     """
     if interactive:
-        log_message("{} IPv{} routes to be added: \n{}\n\n".format(len(routes), version, routes), interactive)
+        log_message("{} IPv{} routes to be added to VRF \"{}\": \n{}\n\n".format(len(routes), version, vrf, routes), interactive)
     else:
-        log_message("{} IPv{} routes to be added".format(len(routes), version), interactive)
+        log_message("{} IPv{} routes to be added to VRF \"{}\"".format(len(routes), version, vrf), interactive)
                 
     response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
-        cmd = create_ip_routes(routes, version)
+        cmd = create_ip_routes(routes, version, vrf = vrf)
         
         return configure(cmd)
     
-def remove_routes(routes, version, interactive = True):
+def remove_routes(routes, version, vrf = None, interactive = True):
     """Remove routes from the router configuration
     
     Args:
         routes[] (str): list of routes to be added
         version (int): IP version (4/6)
+        vrf (str): VRF name
+        interactive (bool): run in interactive mode (ask user to confirm)
         
     Returns:
         IOS CLI command string.
     
     """
     if interactive:
-        log_message("{} IPv{} routes to be removed: \n{}\n\n".format(len(routes), version, routes), interactive)
+        log_message("{} IPv{} routes to be removed fro VRF  \"{}\": \n{}\n\n".format(len(routes), version, vrf, routes), interactive)
     else:
-        log_message("{} IPv{} routes to be removed".format(len(routes), version), interactive)
+        log_message("{} IPv{} routes to be removed from VRF \"{}\"".format(len(routes), version, vrf), interactive)
 
     response = raw_input("Perform action? y/N ") if interactive else "y"
     if response.lower() == "y":
-        cmd = create_ip_routes(routes, version, "no")
+        cmd = create_ip_routes(routes, version, vrf = vrf, prefix = "no")
         
         return configure(cmd)
         
@@ -254,7 +267,7 @@ def ios_log(message, severity=5):
     message = (message[:120] + '...') if len(message) > 120 else message
     cli("send log {} {}".format(severity, message))
         
-def test_parsing():
+def test_parsing(vrf = None):
     """Test procedure to verify O365 source and parsing commands
     
     Args:
@@ -269,7 +282,7 @@ def test_parsing():
     v4nets = o365_networks["ipv4"]
     nets = v4nets
 
-    cmd = create_ip_routes(v4nets, 4)
+    cmd = create_ip_routes(v4nets, 4, vrf = vrf)
     rt = cmd.split("\n")
     v4test_nets = []
     test_nets = v4test_nets
@@ -287,7 +300,7 @@ def test_parsing():
         log_message("IPv4 test OK, networks received, command parsing passed")
 
     v6nets = o365_networks["ipv6"]
-    cmd = create_ip_routes(v6nets, 6)
+    cmd = create_ip_routes(v6nets, 6, vrf = vrf)
     rt = cmd.split("\n")
     v6test_nets = []
     test_nets += v6test_nets
