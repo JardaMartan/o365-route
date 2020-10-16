@@ -37,7 +37,8 @@ VirtualPortGroup0 can have `ip nat inside` with proper additional configuration 
 
 ### Script parameters
 
-```usage: o365_manage_route.py [-h] [-i] [-4] [-6] [-v VRF]
+```
+usage: o365_manage_route.py [-h] [-i] [-4] [-6] [-v VRF]
 
 optional arguments:
   -h, --help         show this help message and exit
