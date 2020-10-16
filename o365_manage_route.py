@@ -40,16 +40,15 @@ else:
 check_v4_routes = cfg.check_v4_routes if hasattr(cfg, "check_v4_routes") else True
 check_v6_routes = cfg.check_v6_routes if hasattr(cfg, "check_v6_routes") else False
 
-def get_o365_networks(v4 = True, v6 = False, interactive = True):
+def get_o365_networks(interactive = True):
     """Get list of Office365 networks from Microsoft
     see: https://docs.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service
     
     Args:
-        v4 (bool): return IPv4 networks
-        v6 (bool): return IPv6 networks
+        interactive (bool): interactive mode (or automated), used for logging method
         
     Returns:
-        List of network prefixes.
+        dict with 2 lists of network prefixes (ipv4, ipv6).
     
     """
     my_uuid = str(uuid.uuid4())
@@ -66,7 +65,8 @@ def get_o365_networks(v4 = True, v6 = False, interactive = True):
         
     o365_endpoints = res.json()
 
-    networks = []
+    v4networks = []
+    v6networks = []
 
     for e in o365_endpoints:
         if e["expressRoute"]:
@@ -75,13 +75,19 @@ def get_o365_networks(v4 = True, v6 = False, interactive = True):
                 result_ips = []
                 for net in e["ips"]:
                     ip_net = ipaddress.ip_network(net)
-                    if (ip_net.version == 4 and v4) or (ip_net.version == 6 and v6):
-                        networks.append(net)
+                    if ip_net.version == 4:
+                        v4networks.append(net)
+                    elif ip_net.version == 6:
+                        v6networks.append(net)
+                    else:
+                        log_message("Unknown IP version {} detected for {}".format(ip_net.version, net))
                 
-    nets = list(set(networks))
-    nets.sort()
+    v4nets = list(set(v4networks)) # remove duplicates
+    v4nets.sort()
+    v6nets = list(set(v6networks)) # remove duplicates
+    v6nets.sort()
     
-    return nets
+    return {"ipv4": v4nets, "ipv6": v6nets}
 
 def create_ip_routes(networks, version, prefix="", interactive = True):
     """Create IOS CLI command(s) for static IP route setting
@@ -147,38 +153,38 @@ def match_ipv6_route(route, skip_default_route = True):
         if  prefix.prefixlen > 0 or not skip_default_route:
             return u"{}/{}".format(prefix.network_address, prefix.prefixlen)
                         
-def get_configured_networks(v4 = True, v6 = False, interactive = True):
+def get_configured_networks(interactive = True):
     """Get static routes from router configuration
     
-    Args:
-        
-    Returns:
-        List of routes in "net/prefixlen" format.
+Args:
+    interactive (bool): interactive mode (or automated), used for logging method
+    
+Returns:
+    dict with 2 lists of network prefixes (ipv4, ipv6).
     
     """
-    cfg_nets = []
+    v4cfg_nets = []
+    v6cfg_nets = []
     
-    if v4:
-        exec_result = execute("sh run | section ip route")
-        routes = exec_result.split("\n")
-        
-        for r in routes:
-            netw = match_ipv4_route(r)
-            if netw:
-                cfg_nets.append(netw)
+    exec_result = execute("sh run | section ip route")
+    routes = exec_result.split("\n")
     
-    if v6:
-        exec_result = execute("sh run | section ipv6 route")
-        routes = exec_result.split("\n")
-        
-        for r in routes:
-            netw = match_ipv6_route(r)
-            if netw:
-                cfg_nets.append(netw)
+    for r in routes:
+        netw = match_ipv4_route(r)
+        if netw:
+            v4cfg_nets.append(netw)
+    
+    exec_result = execute("sh run | section ipv6 route")
+    routes = exec_result.split("\n")
+    
+    for r in routes:
+        netw = match_ipv6_route(r)
+        if netw:
+            v6cfg_nets.append(netw)
                 
-    return cfg_nets
+    return {"ipv4": v4cfg_nets, "ipv6": v6cfg_nets}
     
-def compare_routes(v4 = True, v6 = False, interactive = True):
+def compare_routes(o365_routes, configured_routes, interactive = True):
     """Compare list of routes from O365 and router
     
     Args:
@@ -187,9 +193,6 @@ def compare_routes(v4 = True, v6 = False, interactive = True):
         Networks that are missing in the router and that are excessive.
     
     """
-    o365_routes = get_o365_networks(v4, v6, interactive)
-    configured_routes = get_configured_networks(v4, v6, interactive)
-    
     missing_routes = list(set(o365_routes) - set(configured_routes))
     excessive_routes = list(set(configured_routes) - set(o365_routes))
     
@@ -260,7 +263,10 @@ def test_parsing():
         O365 networks, test networks (should be the same as O365), static networks from the router.
     
     """
-    v4nets = get_o365_networks(v4 = True, v6 = False)
+    o365_networks = get_o365_networks()
+    configured_networks = get_configured_networks()
+
+    v4nets = o365_networks["ipv4"]
     nets = v4nets
 
     cmd = create_ip_routes(v4nets, 4)
@@ -280,8 +286,7 @@ def test_parsing():
     else:
         log_message("IPv4 test OK, networks received, command parsing passed")
 
-    v6nets = get_o365_networks(v4 = False, v6 = True)
-    nets += v6nets   
+    v6nets = o365_networks["ipv4"]
     cmd = create_ip_routes(v6nets, 6)
     rt = cmd.split("\n")
     v6test_nets = []
@@ -299,10 +304,12 @@ def test_parsing():
     else:
         log_message("IPv6 test OK, networks received, command parsing passed")
 
-    cfg_nets = get_configured_networks(v4 = True, v6 = True)
+    cfg_nets = get_configured_networks()
     log_message("Configured networks: {}".format(cfg_nets))
     
-    return nets, test_nets, cfg_nets
+    test_nets = {"ipv4": v4test_nets, "ipv6": v6test_nets}
+    
+    return o365_networks, test_nets, cfg_nets
             
 if __name__ == "__main__":
     import argparse
@@ -317,12 +324,15 @@ if __name__ == "__main__":
         check_v4_routes = False
     if args.ipv6:
         check_v6_routes = True
+        
+    o365_networks = get_o365_networks(args.interactive)
+    configured_networks = get_configured_networks(args.interactive)
 
     config_changed = False
     if check_v4_routes:
         response = raw_input("Check IPv4 O365 routing configuration? y/N ") if args.interactive else "y"
         if response.lower() == "y":
-            v4missing, v4excessive = compare_routes(v4 = True, v6 = False, interactive = args.interactive)
+            v4missing, v4excessive = compare_routes(o365_networks["ipv4"], configured_networks["ipv4"], interactive = args.interactive)
             
             if v4missing:
                 add_result = add_routes(v4missing, 4, interactive = args.interactive)
@@ -339,7 +349,7 @@ if __name__ == "__main__":
     if check_v6_routes:
         response = raw_input("Check IPv6 O365 routing configuration? y/N ") if args.interactive else "y"
         if response.lower() == "y":
-            v6missing, v6excessive = compare_routes(v4 = False, v6 = True, interactive = args.interactive)
+            v6missing, v6excessive = compare_routes(o365_networks["ipv6"], configured_networks["ipv6"], interactive = args.interactive)
             
             if v6missing:
                 add_result = add_routes(v6missing, 6, interactive = args.interactive)
