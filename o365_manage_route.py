@@ -336,6 +336,15 @@ o365_networks, test_nets, cfg_nets = test_parsing()
 remove_routes(o365_networks["ipv4"], 4)
 
 remove_routes(o365_networks["ipv6"], 6)
+
+
+or for VRF-based configuration (VRF "vp" in this case):
+
+o365_networks, test_nets, cfg_nets = test_parsing(vrf="vp")
+
+remove_routes(o365_networks["ipv4"], 4, vrf="vp")
+
+remove_routes(o365_networks["ipv6"], 6, vrf="vp")
 """
             
 if __name__ == "__main__":
