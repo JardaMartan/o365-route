@@ -54,6 +54,7 @@ event manager applet o365route
 4. do not forget to save configuration
 
 for VRF-based configuration (VRF "vp" in this case) do:
-1. `o365_networks, test_nets, cfg_nets = test_parsing(vrf="vp")`
-2. `remove_routes(o365_networks["ipv4"], 4, vrf="vp")`
-3. `remove_routes(o365_networks["ipv6"], 6, vrf="vp")`
+1. `python -i o365_manage_route.py -i -v vp`
+2. `o365_networks, test_nets, cfg_nets = test_parsing(vrf="vp")`
+3. `remove_routes(o365_networks["ipv4"], 4, vrf="vp")`
+4. `remove_routes(o365_networks["ipv6"], 6, vrf="vp")`
