@@ -312,7 +312,11 @@ def test_parsing():
     return o365_networks, test_nets, cfg_nets
     
 """
-To run tests or delete existing routes, do:
+To run tests or delete existing routes, switch to interactive mode
+
+python -i o365_manage_route.py -i
+
+and do:
 
 o365_networks, test_nets, cfg_nets = test_parsing()
 
