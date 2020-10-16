@@ -48,7 +48,7 @@ event manager applet o365route
 
 ### Remove routes from configuration
 
-1. run script in interactive mode `python -i o365_manage_route.py -i
+1. run script in interactive mode `python -i o365_manage_route.py -i`
 2. run test procedure `o365_networks, test_nets, cfg_nets = test_parsing()`
 3. remove IPv4 and IPv6 routes `remove_routes(o365_networks["ipv4"], 4)`, `remove_routes(o365_networks["ipv6"], 6)`
 4. do not forget to save configuration
