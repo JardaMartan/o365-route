@@ -287,7 +287,7 @@ def test_parsing(vrf = None):
     v4test_nets = []
     test_nets = v4test_nets
     for r in rt:
-        netw = match_ipv4_route(r)
+        netw = match_ipv4_route(r, vrf = vrf)
         if netw:
             v4test_nets.append(netw)
             
@@ -305,7 +305,7 @@ def test_parsing(vrf = None):
     v6test_nets = []
     test_nets += v6test_nets
     for r in rt:
-        netw = match_ipv6_route(r)
+        netw = match_ipv6_route(r, vrf = vrf)
         if netw:
             v6test_nets.append(netw)
             
